@@ -16,200 +16,196 @@ encoded permanently in the parameters below.
 if -u or -d is set to '-' or '', no sound is played.
 """
 
-### Parameters
-default_up_sound_file="sounds/up.wav"
+# Parameters
+from socket import socket, AF_UNIX, SOCK_STREAM, SOL_SOCKET, SO_PASSCRED
+from time import sleep
+import argparse
+import sys
+import os
+import re
+default_up_sound_file = "sounds/up.wav"
 # default_down_sound_file="sounds/down.wav"
-socket_path="/tmp/ppnfc_server.socket"
+socket_path = "/tmp/ppnfc_server.socket"
 
 # Comment this out to use pyaudio instead of an external player
-external_player_command="/usr/bin/play {sndfile}"
+external_player_command = "/usr/bin/play {sndfile}"
 
 
-
-### Modules
-import re
-import os
-import sys
-import argparse
-from time import sleep
-from socket import socket, AF_UNIX, SOCK_STREAM, SOL_SOCKET, SO_PASSCRED
+# Modules
 
 if "external_player_command" in globals() and external_player_command:
-  from subprocess import Popen, DEVNULL
+    from subprocess import Popen, DEVNULL
 else:
-  import wave
-  from pyaudio import PyAudio
-  external_player_command=None
+    import wave
+    from pyaudio import PyAudio
+    external_player_command = None
 
 
-
-### Subroutines
+# Subroutines
 def play_wav_file(fpath):
 
-  # Use an external player
-  if external_player_command:
-    Popen(external_player_command.format(sndfile=fpath).split(),
-				stdin=DEVNULL, stdout=DEVNULL, stderr=DEVNULL)
+    # Use an external player
+    if external_player_command:
+        Popen(external_player_command.format(sndfile=fpath).split(),
+              stdin=DEVNULL, stdout=DEVNULL, stderr=DEVNULL)
 
-  # Use pyaudio
-  else:
+    # Use pyaudio
+    else:
 
-    # Open the WAV file
-    f=wave.open(fpath, "rb")
+        # Open the WAV file
+        f = wave.open(fpath, "rb")
 
-    # Redirect stderr to /dev/null to hide useless PortAudio messages
-    devnull=os.open(os.devnull, os.O_WRONLY)
-    old_stderr=os.dup(2)
-    sys.stderr.flush()
-    os.dup2(devnull, 2)
-    os.close(devnull)
+        # Redirect stderr to /dev/null to hide useless PortAudio messages
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        old_stderr = os.dup(2)
+        sys.stderr.flush()
+        os.dup2(devnull, 2)
+        os.close(devnull)
 
-    try:
-      p=PyAudio()
-    except:
-      # Restore stderr
-      os.dup2(old_stderr, 2)
-      os.close(old_stderr)
-      raise
+        try:
+            p = PyAudio()
+        except:
+            # Restore stderr
+            os.dup2(old_stderr, 2)
+            os.close(old_stderr)
+            raise
 
-    # Restore stderr
-    os.dup2(old_stderr, 2)
-    os.close(old_stderr)
+        # Restore stderr
+        os.dup2(old_stderr, 2)
+        os.close(old_stderr)
 
-    # Open the stream
-    stream=p.open(
-  	  format=p.get_format_from_width(f.getsampwidth()),
-  	  channels=f.getnchannels(),
-  	  rate=f.getframerate(),
-  	  output=True
-  	)
+        # Open the stream
+        stream = p.open(
+            format=p.get_format_from_width(f.getsampwidth()),
+            channels=f.getnchannels(),
+            rate=f.getframerate(),
+            output=True
+        )
 
-    # Send the WAV file to the stream in chunks
-    data=f.readframes(1024)
-    while data:
-      stream.write(data)
-      data=f.readframes(1024)
+        # Send the WAV file to the stream in chunks
+        data = f.readframes(1024)
+        while data:
+            stream.write(data)
+            data = f.readframes(1024)
 
-    stream.stop_stream()
-    stream.close()
+        stream.stop_stream()
+        stream.close()
 
-    p.terminate()
+        p.terminate()
 
 
-
-### Main routine
+# Main routine
 def main():
-  """Main routine
-  """
+    """Main routine
+    """
 
-  # Read the command line arguments
-  argparser=argparse.ArgumentParser()
-  argparser.add_argument(
-	  "-u", "--upsoundfile",
-	  type=str,
-	  help="WAV sound file to play when a new UID comes up (- to disable)",
-          required=False
-	)
- #  argparser.add_argument(
-	#   "-d", "--downsoundfile",
-	#   type=str,
-	#   help="WAV sound file to play when a UID goes away (- to disable)",
- #          required=False
-	# )
-  args=argparser.parse_args()
+    # Read the command line arguments
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument(
+        "-u", "--upsoundfile",
+        type=str,
+        help="WAV sound file to play when a new UID comes up (- to disable)",
+        required=False
+    )
+   #  argparser.add_argument(
+    #   "-d", "--downsoundfile",
+    #   type=str,
+    #   help="WAV sound file to play when a UID goes away (- to disable)",
+   #          required=False
+    # )
+    args = argparser.parse_args()
 
-  upsndfile=args.upsoundfile if args.upsoundfile!=None \
-		else default_up_sound_file
-  # downsndfile=args.downsoundfile if args.downsoundfile!=None \
-		# else default_down_sound_file
+    upsndfile = args.upsoundfile if args.upsoundfile != None \
+        else default_up_sound_file
+    # downsndfile=args.downsoundfile if args.downsoundfile!=None \
+    # else default_down_sound_file
 
-  sock=None
+    sock = None
 
-  while True:
+    while True:
 
-    if not sock:
+        if not sock:
 
-      # Open a socket to the auth server
-      try:
-        sock=socket(AF_UNIX, SOCK_STREAM)
-        sock.setsockopt(SOL_SOCKET, SO_PASSCRED, 1)
-        sock.connect(socket_path)
-      except:
-        if sock:
-          sock.close()
-        sock=None
-        sleep(1)
-        continue
+            # Open a socket to the auth server
+            try:
+                sock = socket(AF_UNIX, SOCK_STREAM)
+                sock.setsockopt(SOL_SOCKET, SO_PASSCRED, 1)
+                sock.connect(socket_path)
+            except:
+                if sock:
+                    sock.close()
+                sock = None
+                sleep(1)
+                continue
 
-      # Send the request to the server
-      try:
-        sock.sendall("WATCHNBUIDS\n".encode("ascii"))
-      except:
-        sock.close()
-        sock=None
-        sleep(1)
-        continue
- 
-      crecvbuf=""
+            # Send the request to the server
+            try:
+                sock.sendall("WATCHNBUIDS\n".encode("ascii"))
+            except:
+                sock.close()
+                sock = None
+                sleep(1)
+                continue
 
-    clines=[]
+            crecvbuf = ""
 
-    # Get data from the socket
-    try:
-      b=sock.recv(256).decode("ascii")
-    except KeyboardInterrupt:
-      sock.close()
-      return(0)
-    except:
-      sock.close()
-      sock=None
-      sleep(1)
-      continue
+        clines = []
 
-    # If we got nothing, the server has closed its end of the socket.
-    if len(b)==0:
-      sock.close()
-      sock=None
-      sleep(1)
-      continue
+        # Get data from the socket
+        try:
+            b = sock.recv(256).decode("ascii")
+        except KeyboardInterrupt:
+            sock.close()
+            return(0)
+        except:
+            sock.close()
+            sock = None
+            sleep(1)
+            continue
 
-    # Read CR- or LF-terminated lines
-    for c in b:
+        # If we got nothing, the server has closed its end of the socket.
+        if len(b) == 0:
+            sock.close()
+            sock = None
+            sleep(1)
+            continue
 
-      if c=="\n" or c=="\r":
-        clines.append(crecvbuf)
-        crecvbuf=""
+        # Read CR- or LF-terminated lines
+        for c in b:
 
-      elif len(crecvbuf)<256 and c.isprintable():
-        crecvbuf+=c
+            if c == "\n" or c == "\r":
+                clines.append(crecvbuf)
+                crecvbuf = ""
 
-    # Process the lines
-    for l in clines:
+            elif len(crecvbuf) < 256 and c.isprintable():
+                crecvbuf += c
 
-      # Only care about active UIDs status updates
-      m=re.findall("^NBUIDS\s([0-9]+)\s([-+]?[0-9]+)$", l)
-      if m:
+        # Process the lines
+        for l in clines:
 
-        # Play the "up" sound file if the number of active UIDs has
-        # increased
-        chg=float(m[0][1])
+            # Only care about active UIDs status updates
+            m = re.findall("^NBUIDS\s([0-9]+)\s([-+]?[0-9]+)$", l)
+            if m:
 
-        if chg > 0 and upsndfile and upsndfile!="-":
-          try:
-            play_wav_file(upsndfile)
-          except:
-            print("Error: cannot play {} sound file".format(upsndfile))
+                # Play the "up" sound file if the number of active UIDs has
+                # increased
+                chg = float(m[0][1])
 
-        # Play the "down" sound file if the number of active UIDs has
-        # decreased
-        # elif chg < 0 and downsndfile and downsndfile!="-":
-        #   try:
-        #     play_wav_file(downsndfile)
-        #   except:
-        #     print("Error: cannot play {} sound file".format(downsndfile))
+                if chg > 0 and upsndfile and upsndfile != "-":
+                    try:
+                        play_wav_file(upsndfile)
+                    except:
+                        print("Error: cannot play {} sound file".format(upsndfile))
+
+                # Play the "down" sound file if the number of active UIDs has
+                # decreased
+                # elif chg < 0 and downsndfile and downsndfile!="-":
+                #   try:
+                #     play_wav_file(downsndfile)
+                #   except:
+                #     print("Error: cannot play {} sound file".format(downsndfile))
 
 
-
-### Jump to the main routine
-if __name__=="__main__":
-  sys.exit(main())
+# Jump to the main routine
+if __name__ == "__main__":
+    sys.exit(main())
