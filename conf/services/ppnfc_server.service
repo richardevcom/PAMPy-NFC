@@ -1,9 +1,9 @@
 [Unit]
-Description=PPRFID RFID / NFC UID authentication server
+Description=PAMPy RFID / NFC UID authentication server
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/pprfid_server.py
+ExecStart=/usr/local/bin/ppnfc_server.py
 Restart=always
 RestartSec=1
 

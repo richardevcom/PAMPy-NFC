@@ -77,7 +77,7 @@ else
 
         # Pull repo files
         ppnfc_dir="$temp_dir/ppnfc"
-        ppnfc_repo="https://github.com/richardevcom/PAMPy-NFC"
+        ppnfc_repo="https://github.com/richardevcom/PAMPy-NFC.git"
         echo "❐ Cloning PAMpy NFC files from $ppnfc_repo..."
         # Remove previous repo if exists
         rm -rf $ppnfc_dir &>/dev/null
@@ -115,7 +115,7 @@ else
 
         # Install PCSC driver
         echo "❐ Installing PC/SC driver..."
-        yes | dpkg -i $ppnfc_dir/lib/driver/libacsccid1_1.1.8-1~ubuntu18.04.1_amd64 &>/dev/null
+        yes | dpkg -i $ppnfc_dir/lib/driver/libacsccid1_1.1.8-1~ubuntu18.04.1_amd64.deb &>/dev/null
         echo "✔ PC/SC driver installed."
 
         # Restart PC/SC service before continuing
@@ -125,7 +125,7 @@ else
 
         # Install python packages
         echo "❐ Installing Python & Python modules..."
-        apt-get -y install python3 python3-pip python3-pyscard python3-evdev python3-serial python3-filelock python3-psutil python3-cryptography python3-xdo python3-setproctitle python3-requests python3-xlib python3-tk &>/dev/null
+        apt-get -y install python3 python3-pip python3-pyscard python3-evdev python3-serial python3-filelock python3-psutil python3-cryptography python3-xdo python3-setproctitle python3-requests python3-xlib &>/dev/null
         echo "✔ Python & Python modules installed."
 
         # Rewrite URL for config
@@ -137,9 +137,9 @@ else
         echo "❐ Placing PAMpy NFC files accross system..."
         yes | cp -rf $ppnfc_dir/bin/scripts/* /usr/local/bin &>/dev/null
         yes | cp -rf $ppnfc_dir/conf/services/*.service /lib/systemd/system &>/dev/null
-        yes | cp -rf $ppnfc_dir/bin/ppnfc_pam.config /usr/share/pam-configs &>/dev/null
-        yes | cp -rf $ppnfc_dir/bin/themes/breeze/Login.qml /usr/share/sddm/themes/breeze/ &>/dev/null
-        yes | cp -rf $ppnfc_dir/bin/themes/breeze/Main.qml /usr/share/sddm/themes/breeze/ &>/dev/null
+        yes | cp -rf $ppnfc_dir/conf/ppnfc_pam.config /usr/share/pam-configs &>/dev/null
+        yes | cp -rf $ppnfc_dir/bin/theme/Login.qml /usr/share/sddm/themes/breeze/ &>/dev/null
+        yes | cp -rf $ppnfc_dir/bin/theme/Main.qml /usr/share/sddm/themes/breeze/ &>/dev/null
         echo "✔ PAMpy NFC files deployed."
 
         # LOG file
@@ -151,10 +151,10 @@ else
         echo "❐ Setting up PAMpy NFC file & folder permissions..."
         chown -R root:root /usr/local/bin/ppnfc_* &>/dev/null
         chown -R root:root /lib/systemd/system/ppnfc_* &>/dev/null
-        chown -R root:root /etc/profile.d/ppnfc_display &>/dev/null
+        # chown -R root:root /etc/profile.d/ppnfc_display &>/dev/null
         chmod +x /usr/local/bin/ppnfc_* &>/dev/null
         chmod +x /lib/systemd/system/ppnfc_* &>/dev/null
-        chmod +x /etc/profile.d/ppnfc_display &>/dev/null
+        # chmod +x /etc/profile.d/ppnfc_display &>/dev/null
         # Log
         # chown -R root:root /var/log/ppnfc.log &>/dev/null
         # chmod 0644 /var/log/ppnfc.log &>/dev/null
@@ -168,8 +168,8 @@ else
         systemctl enable ppnfc_keyboard_wedge &>/dev/null
         systemctl start ppnfc_keyboard_wedge &>/dev/null
 
-        systemctl enable ppnfc_auto_enter &>/dev/null
-        systemctl start ppnfc_auto_enter &>/dev/null
+        systemctl enable ppnfc_auto_send_enter_at_login &>/dev/null
+        systemctl start ppnfc_auto_send_enter_at_login &>/dev/null
         echo "✔ PAMpy NFC services ready."
 
         # Fix pam_unix.so delay

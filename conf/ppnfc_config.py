@@ -1,5 +1,5 @@
 # API (remote)
-api_endpoint = "http://127.0.0.1/api/Values/GetValues/"
+api_endpoint = "http://127.0.0.1/api/"
 api_request_timeout = 10  # s
 
 # HTTP
