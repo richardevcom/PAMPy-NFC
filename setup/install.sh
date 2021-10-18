@@ -165,8 +165,8 @@ else
 
         # Enable & start PAMpy NFC
         echo "❐ Enable & start PAMpy NFC services"
-        systemctl enable ppnfc_beep &>/dev/null
-        systemctl start ppnfc_beep &>/dev/null
+        # systemctl enable ppnfc_beep &>/dev/null
+        # systemctl start ppnfc_beep &>/dev/null
 
         systemctl enable ppnfc_server &>/dev/null
         systemctl start ppnfc_server &>/dev/null
