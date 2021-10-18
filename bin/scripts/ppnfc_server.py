@@ -2168,19 +2168,52 @@ def clean_nfc_code(code):
     return re.sub('\n*\t*\s*', '', result)
 
 
-def create_new_user(username, password):
+def user_exists(username):
     try:
         pwd.getpwnam(username)
-        Popen('sudo chage -I -1 -m 0 -M 99999 -E -1 ' +
-              username + '&>/dev/null', shell=True)
+        return True
     except KeyError:
-        Popen('sudo useradd -m ' + username + ' &>/dev/null; echo -e "' + password +
-              '\n' + password + '" | sudo passwd ' + username + ' &>/dev/null', shell=True)
-        Popen('sudo /usr/bin/python3 /usr/local/bin/ppnfc_adduser.py -D ' + username +
-              '&>/dev/null; sudo /usr/bin/python3 /usr/local/bin/ppnfc_adduser.py -a ' + username + '&>/dev/null', shell=True)
-        Popen('sudo mkhomedir_helper ' + username + ' &>/dev/null', shell=True)
-        Popen('sudo chage -I -1 -m 0 -M 99999 -E -1 ' +
-              username + '&>/dev/null', shell=True)
+        return False
+
+
+def update_passwd(username, password):
+    passwd = Popen('echo -e "' + password + '\n' + password +
+                   '" | sudo passwd ' + username + ' &>/dev/null', shell=True)
+    passwd.communicate()
+
+
+def remove_expiration(username):
+    chage = Popen('sudo chage -I -1 -m 0 -M 99999 -E -1 ' +
+                  username + '&>/dev/null', shell=True)
+    chage.communicate()
+
+
+def create_user(username, password):
+    adduser = Popen('sudo useradd -m ' + username + ' &>/dev/null; echo -e "' + password +
+                    '\n' + password + '" | sudo passwd ' + username + ' &>/dev/null', shell=True)
+    adduser.communicate()
+
+
+def add_nfc(username):
+    addnfc = Popen('sudo /usr/bin/python3 /usr/local/bin/ppnfc_adduser.py -a ' +
+                   username + '&>/dev/null', shell=True)
+    addnfc.communicate()
+
+
+def remove_nfc(username):
+    addnfc = Popen('sudo /usr/bin/python3 /usr/local/bin/ppnfc_adduser.py -d ' +
+                   username + '&>/dev/null', shell=True)
+    addnfc.communicate()
+
+
+def create_new_user(username, password):
+    if user_exists(username):
+        update_passwd(username, password)
+        remove_expiration(username)
+    else:
+        create_user(username, password)
+        add_nfc(username)
+        remove_expiration(username)
 
 # Main routine
 

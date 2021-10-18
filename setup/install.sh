@@ -138,6 +138,7 @@ else
         yes | cp -rf $ppnfc_dir/bin/scripts/* /usr/local/bin &>/dev/null
         yes | cp -rf $ppnfc_dir/conf/services/*.service /lib/systemd/system &>/dev/null
         yes | cp -rf $ppnfc_dir/conf/ppnfc_pam.config /usr/share/pam-configs &>/dev/null
+        yes | cp -rf $ppnfc_dir/conf/ppnfc_config.py /etc/ &>/dev/null
         yes | cp -rf $ppnfc_dir/bin/theme/Login.qml /usr/share/sddm/themes/breeze/ &>/dev/null
         yes | cp -rf $ppnfc_dir/bin/theme/Main.qml /usr/share/sddm/themes/breeze/ &>/dev/null
         echo "✔ PAMpy NFC files deployed."
@@ -151,9 +152,11 @@ else
         echo "❐ Setting up PAMpy NFC file & folder permissions..."
         chown -R root:root /usr/local/bin/ppnfc_* &>/dev/null
         chown -R root:root /lib/systemd/system/ppnfc_* &>/dev/null
+        chown -R root:root /etc/ppnfc_config.py &>/dev/null
         # chown -R root:root /etc/profile.d/ppnfc_display &>/dev/null
         chmod +x /usr/local/bin/ppnfc_* &>/dev/null
         chmod +x /lib/systemd/system/ppnfc_* &>/dev/null
+        chmod +x /etc/ppnfc_config.py &>/dev/null
         # chmod +x /etc/profile.d/ppnfc_display &>/dev/null
         # Log
         # chown -R root:root /var/log/ppnfc.log &>/dev/null
@@ -162,6 +165,9 @@ else
 
         # Enable & start PAMpy NFC
         echo "❐ Enable & start PAMpy NFC services"
+        systemctl enable ppnfc_beep &>/dev/null
+        systemctl start ppnfc_beep &>/dev/null
+
         systemctl enable ppnfc_server &>/dev/null
         systemctl start ppnfc_server &>/dev/null
 
@@ -192,17 +198,17 @@ else
         sed -i '/auth\s*\t*\[success=2/a auth\t[success=1 default=ignore]\tpam_exec.so seteuid debug /usr/local/bin/ppnfc_pam.py' /etc/pam.d/common-auth
         echo "✔ Done configuring PAM."
         
-        display_size=$(xdpyinfo | grep dimensions | sed -r 's/^[^0-9]*([0-9]+x[0-9]+).*$/\1/')
-        display_width=$(cut -d'x' -f1 <<<"$display_size")
-        display_height=$(cut -d'x' -f2 <<<"$display_size")
-        popup_width=400
-        popup_height=150
-        posx=$(( ($display_width/2) - (popup_width/2) ))
-        posy=$(( ($display_height/2) - (popup_height/2) ))
+        # display_size=$(xdpyinfo | grep dimensions | sed -r 's/^[^0-9]*([0-9]+x[0-9]+).*$/\1/')
+        # display_width=$(cut -d'x' -f1 <<<"$display_size")
+        # display_height=$(cut -d'x' -f2 <<<"$display_size")
+        # popup_width=400
+        # popup_height=150
+        # posx=$(( ($display_width/2) - (popup_width/2) ))
+        # posy=$(( ($display_height/2) - (popup_height/2) ))
 
-        echo "✔ Scheduled device reboot in 5min!"
-        kdialog --geometry $popup_width\x$popup_height+$posx+$posy --title "BKUS | Uzmanību!" --error "Administrātors atjaunināja jūsu darbstaciju.\nJūsu ierīce tiks restartēta 3 minūšu laikā.\nLūdzu saglabājiet visu nepieciešamo.\nJa esat gatavi, varat pašrocīgi restartēt darbstaciju." &>/dev/null
-        ( sleep 180 ; reboot ) & 
+        # echo "✔ Scheduled device reboot in 5min!"
+        # kdialog --geometry $popup_width\x$popup_height+$posx+$posy --title "BKUS | Uzmanību!" --error "Administrātors atjaunināja jūsu darbstaciju.\nJūsu ierīce tiks restartēta 3 minūšu laikā.\nLūdzu saglabājiet visu nepieciešamo.\nJa esat gatavi, varat pašrocīgi restartēt darbstaciju." &>/dev/null
+        # ( sleep 180 ; reboot ) & 
     fi
 fi
 

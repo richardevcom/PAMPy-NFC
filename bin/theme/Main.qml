@@ -166,6 +166,7 @@ PlasmaCore.ColorScope {
             Layout.fillWidth: true
             height: 240
             text: ""
+            visible: false
         }
     }
 
