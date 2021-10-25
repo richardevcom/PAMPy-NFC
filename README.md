@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://github.com/richardevcom/PAMPy-NFC/blob/main/hero.png?raw=true" alt="NFC"/>
+</p>
+
 ## Automātiskā instalācija
 
 Uzstādiet `wget` un palaidiet šo attālināto instalācijas skriptu:<br/>
