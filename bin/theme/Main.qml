@@ -365,5 +365,6 @@ PlasmaCore.ColorScope {
     Debug {
         id: debug
         setWidth: root.width / 3
+        visible: false
     }
 }
