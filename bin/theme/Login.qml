@@ -7,17 +7,18 @@ import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.components 2.0 as PlasmaComponents
 
 SessionManagementScreen {
-
     property bool showUsernamePrompt: !showUserList
-
     property string lastUserName
 
+    // @richardev - Where is onAccepted initially called from: username or password input?
     property string calledFrom: 'username'
 
-    property string tempUsername
-    property string tempPassword
-    property string tempPin
-    property string tempNFC
+    // Temporary auth credentials
+    property variant temp: {
+        "username":"",
+        "password":"",
+        "pin":""
+    }
 
     //the y position that should be ensured visible when the on screen keyboard is visible
     property int visibleBoundary: mapFromItem(loginButton, 0, 0).y
@@ -52,66 +53,74 @@ SessionManagementScreen {
      */
     function initLogin(uid) {
         // Headers and params are optional
-        devLog.text += "--> SENDING initial REQUEST -->\n"
         makeRequest({
             "action":"check",
             "UID": String(uid)
         }, function(status, response) {
-            devLog.text += "--<--<--<--<--<--<--<\n"
-            devLog.text += response
-            devLog.text += "\n--<--<--<--<--<--<--<\n"
             var djson = JSON.parse(response)
 
-            if(djson["State"] !== undefined) {
-                devLog.text += "<-- STATE RECEIVED: " + djson["State"] + "\n"
+            if(typeof djson === 'object' && djson["State"] !== undefined) {
+                // debug
+                debug.log("info", "Received State <b>" + djson["State"] + "</b>")
 
+                // Received any valid state?
                 if([6, 7, 17, 20].indexOf(djson["State"]) >= 0){
+
+                    /** CARD FOUND - ASK PIN **/
                     if(djson["State"] == 6) {
-                        devLog.text += "=== ENTER PIN ===\n"
+                        debug.log("info", "NFC found. Authorizing...")
 
-                        tempUsername    = djson["Username"]
-                        tempPassword    = djson["Password"]
-                        tempPin         = djson["Pin"]
-                        tempNFC         = uid
+                        temp["username"]    = djson["Username"]
+                        temp["password"]    = djson["Password"]
 
-                        userNameInput.text = tempUsername
-                        passwordBox.text = tempPassword
+                        temp["pin"]         = djson["Pin"]
+                        temp["nfc"]         = uid
+
+
+                        userNameInput.text = temp["username"]
+                        passwordBox.text = temp["password"]
                         pinUi()
                     }
 
+                    /** CARD NOT FOUND - REGISTER **/
                     if(djson["State"] == 7) {
-                        devLog.text += "=== REGISTERING NFC ===\n"
-                        root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Reģistrē...")
+                        debug.log("info", "NFC not found. Registering...")
 
-                        tempNFC         = uid
+                        temp["nfc"]         = uid
                         userNameInput.text = ""
                         passwordBox.text = ""
 
                         registerUi()
                     }
 
+                    /** CARD PASSWORD EXPIRED - CHANGE PASSWORD **/
                     if(djson["State"] == 17) {
-                        devLog.text += "=== CHANGE PASSWORD ===\n"
-                        root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Paroles atjaunināšana...")
+                        debug.log("info", "Password expired. Change password!")
 
-                        tempNFC         = uid
+                        temp["nfc"]         = uid
+                        temp["username"]    = djson["Username"]
                         userNameInput.text = ""
                         passwordBox.text = ""
 
                         changePasswordUi()
                     }
 
+                    /** CARD BANNED **/
                     if(djson["State"] == 20) {
-                        devLog.text += "!!! NFC BANNED !!!\n"
                         root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","NFC karte ir bloķēta!")
 
-                        tempNFC         = uid
+                        temp["nfc"]         = uid
                         userNameInput.text = ""
                         passwordBox.text = ""
 
                         resetUi()
-                        userNameInput.text = tempUsername
+                        userNameInput.text = temp["username"]
                     }
+                }else if([0, -1, -3, -4].indexOf(djson["State"]) >= 0){
+                    //debug
+                    debug.log("error","Connection error: <b>State " + djson["State"] + "</b>")
+
+                    root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Kļūda savienojumā ar Codelex API serveri!")
                 }else{
                     if(calledFrom == 'username'){
                         if(userNameInput.text.length == 0) {
@@ -121,7 +130,7 @@ SessionManagementScreen {
                             passwordBox.selectAll()
                             passwordBox.forceActiveFocus()
                         }
-                    }else if(calledFrom == 'password'){
+                    }else{
                         if(userNameInput.text.length == 0) {
                             userNameInput.forceActiveFocus()
                             root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Lūdzu norādiet lietotājvārdu!")
@@ -132,13 +141,10 @@ SessionManagementScreen {
                             root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Pieslēdzas...")
                             startLogin()
                         }
-                    }else{
-                        root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Pieslēdzas...")
-                        startLogin()
                     }
                 }
             }else{
-                devLog.text += "!!! FATAL ERROR: no status received. " + response + "\n"
+                root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Nezināma kļūda! Mēģiniet vēlreiz.")
                 startLogin()
             }
         })
@@ -159,113 +165,150 @@ SessionManagementScreen {
                 if (xhr.readyState == 4 && xhr.status == 200) {
                     callback(true, xhr.responseText); // Another callback here
                 }else{
-                    callback(false, xhr.responseText)
+                    callback(false, JSON.stringify({
+                        "State": -5
+                    }))
                 }
             }
         };
 
         xhr.onerror = function () {
-          callback(false, xhr.responseText);
+            callback(false, JSON.stringify({
+                "State": -6
+            }));
         };
 
         xhr.timeout = 10000; // @richardev - Set timeout to 10 seconds (10000 milliseconds)
         xhr.ontimeout = function () {
-            callback(false, xhr.responseText);
+            callback(false, JSON.stringify({
+                "State": -7
+            }));
         }
 
         xhr.send(JSON.stringify(sdata));
     }
 
+    /**
+     * Authorize PIN code
+     */
     function authPin(){
-        devLog.text += "--- Matching " + pinBox.text + " with " + tempPin + " ---\n"
-        if(pinBox.text == tempPin){
-            devLog.text += "PIN OK! :)\n"
+        if(pinBox.text == temp["pin"]){
             root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","PIN kods pareizs. Autorizē...")
             makeRequest({
                 "action":"auth",
-                "UID": String(tempNFC)
+                "UID": String(temp["nfc"])
             }, function(){
                 startLogin()    
             })
             
         }else{
             root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Nepareizs PIN kods. Mēģiniet vēlreiz!")
-            devLog.text += "PIN NOT OK! :(\n"
             pinBox.text = ""
         }
     }
 
+    /**
+     * Authorize registration
+     */
     function authRegister(){
-        devLog.text += "--- Registering " + tempNFC + "---\n"
-        tempUsername = userNameInputRegister.text
-        tempPassword = passwordBoxRegister.text
-        tempPin = pinBoxRegister.text
+        temp["username"] = userNameInputRegister.text
+        temp["password"] = passwordBoxRegister.text
+        temp["pin"] = pinBoxRegister.text
 
         makeRequest({
             "action":"register",
-            "UID": String(tempNFC),
+            "UID": String(temp["nfc"]),
             "Username": userNameInputRegister.text,
             "Password": passwordBoxRegister.text,
             "Pin": pinBoxRegister.text
         }, function(status, response){
-            devLog.text += response + "\n"
             var djson = JSON.parse(response)
 
             if(djson["State"] !== undefined) {
-                devLog.text += "<-- STATE RECEIVED: " + djson["State"] + "\n"
 
                 if(djson["State"] == 3){
                     root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Reģistrēts! Autorizē...")
-                    devLog.text += ":) REGISTERED. LOGGING IN!" + tempNFC + "\n"
-                    userNameInput.text = tempUsername
-                    tempPassword.text = tempPassword
-                    pinBox.text = tempPin
+                    userNameInput.text = temp["username"]
+
                     makeRequest({
                         "action":"auth",
-                        "UID": String(tempNFC)
+                        "UID": String(temp["nfc"])
                     }, function(status, response){
                         startLogin()
                     })
                     
                 }else{
                     root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Nevarēja reģistrēt! Mēģiniet vēlreiz.")
-                    devLog.text += "--- ERROR REGISTERING ---\n"
                 }
             }else{
                 root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Nevarēja reģistrēt! Mēģiniet vēlreiz.")
-                devLog.text += "--- ERROR REGISTERING ---\n"
             }    
         })
     }
 
-    function authChangePassword(){
-        root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Nevarēja atjauninat.")
-        devLog.text += "--- ERROR PASS CHANGE ---\n"
+    /**
+     * Authorize password change
+     */
+    function authChangePassword(final_password){
+        makeRequest({
+            "action":"change_password",
+            "UID": String(temp["nfc"]),
+            "Username": temp["username"],
+            "Password": final_password
+        }, function(status, response){
+            var djson = JSON.parse(response)
+
+            if(djson["State"] !== undefined) {
+                if(djson["State"] == 3){
+                    root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Parole atjaunināta! Autorizē...")
+                    userNameInput.text = temp["username"]
+
+                    makeRequest({
+                        "action":"auth",
+                        "UID": String(temp["nfc"])
+                    }, function(status, response){
+                        startLogin()
+                    })
+                    
+                }else{
+                    root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Nevarēja atjaunināt paroli! Mēģiniet vēlreiz.")
+                }
+            }else{
+                root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Nevarēja atjaunināt paroli! Mēģiniet vēlreiz.")
+            }    
+        })
     }
 
-    // Main grid
+    /**
+     * Main grid
+     */
     GridLayout {
         id: inputRow
         anchors.fill: parent
         rows: 4
         columns: 2
 
-        ////////// AUTH ///////////////
+        /******** AUTH ********/
         // Username Input
         PlasmaComponents.TextField {
             id: userNameInput
-            Layout.fillWidth: true
+            text: lastUserName
+            placeholderText: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Lietotājvārds")
 
+            Layout.fillWidth: true
             Layout.rowSpan   : 1
             Layout.columnSpan: 2
 
-            text: lastUserName
+
             visible: showUsernamePrompt
             focus: showUsernamePrompt && !lastUserName //if there's a username prompt it gets focus first, otherwise password does
-            placeholderText: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Lietotājvārds")
 
             onAccepted: {
+                root.clearNotification = false
+                root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Apstrādā datus...")
+
                 calledFrom = 'username'
+
                 if(userNameInput.text.length == 0) {
                     initLogin(passwordBox.text)
                 }else{
@@ -289,6 +332,9 @@ SessionManagementScreen {
 
             // onAccepted: startLogin()
             onAccepted: {
+                root.clearNotification = false
+                root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Apstrādā datus...")
+                
                 calledFrom = 'password'
                 initLogin(passwordBox.text)
             }
@@ -403,7 +449,20 @@ SessionManagementScreen {
             visible: false
             placeholderText: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Parole")
 
-            onAccepted: authChangePassword()
+            onAccepted: {
+                if(passwordBoxChange1.text.length == 0) {
+                    root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Lūdzu norādiet jauno paroli.")
+                }else {
+                    if(passwordBoxChange1.text !== passwordBoxChange2.text) {
+                        root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Paroles nesakrīt. Lūdzu atkārtojiet paroli...")
+                        passwordBoxChange2.text = ""
+                        passwordBoxChange2.forceActiveFocus()
+                    }else{
+                        passwordBoxChange2.forceActiveFocus()
+                        authChangePassword(passwordBoxChange2.text)
+                    }
+                }
+            }
         }
 
         // Password Input 2
@@ -420,7 +479,20 @@ SessionManagementScreen {
             visible: false
             placeholderText: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Parole atkārtoti")
 
-            onAccepted: authChangePassword()
+            onAccepted: {
+                if(passwordBoxChange2.text.length == 0) {
+                    root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Lūdzu atkārtojiet paroli.")
+                }else {
+                    if(passwordBoxChange1.text !== passwordBoxChange2.text) {
+                        root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Paroles nesakrīt. Lūdzu atkārtojiet paroli...")
+                        passwordBoxChange2.text = ""
+                        passwordBoxChange2.forceActiveFocus()
+                    }else{
+                        passwordBoxChange2.forceActiveFocus()
+                        authChangePassword(passwordBoxChange2.text)
+                    }
+                }
+            }
         }
 
         // Login Button
@@ -510,7 +582,7 @@ SessionManagementScreen {
 
         backButton.Layout.rowSpan = 3
 
-        userNameInput.text = tempUsername
+        userNameInput.text = temp["username"]
         passwordBox.text = ""
         pinBox.text = ""
 
@@ -532,11 +604,12 @@ SessionManagementScreen {
         authButton.visible = true
         backButton.visible = true
 
-        userNameInput.text = tempUsername
+        userNameInput.text = temp["username"]
 
         pinBox.forceActiveFocus()
 
-        root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Lūdzu norādiet PIN kodu.")
+        root.clearNotification = false
+        root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Autorizācija.")
     }
 
     /**
@@ -560,7 +633,8 @@ SessionManagementScreen {
 
         userNameInputRegister.forceActiveFocus()
 
-        root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Lūdzu ievadiet savus lietotāja datus.")
+        root.clearNotification = false
+        root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Reģistrācija.")
     }
 
     /**
@@ -589,6 +663,7 @@ SessionManagementScreen {
 
         passwordBoxChange1.forceActiveFocus()
 
-        root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Lūdzu atjauniniet paroli.")
+        root.clearNotification = false
+        root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Paroles atjaunināšana.")
     }
 }

@@ -36,6 +36,7 @@ PlasmaCore.ColorScope {
     height: 900
 
     property string notificationMessage
+    property bool clearNotification: true
 
     LayoutMirroring.enabled: Qt.application.layoutDirection === Qt.RightToLeft
     LayoutMirroring.childrenInherit: true
@@ -154,19 +155,6 @@ PlasmaCore.ColorScope {
             OpacityAnimator {
                 duration: units.longDuration
             }
-        }
-
-        /**
-         * DEV LOG text area
-         * @richardev - remove for production
-         */
-        PlasmaComponents.TextArea {
-            id: devLog
-            width: 240
-            Layout.fillWidth: true
-            height: 240
-            text: ""
-            visible: false
         }
     }
 
@@ -361,9 +349,10 @@ PlasmaCore.ColorScope {
     }
 
     onNotificationMessageChanged: {
-        if (notificationMessage) {
+        if (notificationMessage && clearNotification) {
             notificationResetTimer.start();
         }
+        clearNotification = true
     }
 
     Timer {
@@ -372,4 +361,9 @@ PlasmaCore.ColorScope {
         onTriggered: notificationMessage = ""
     }
 
+
+    Debug {
+        id: debug
+        setWidth: root.width / 3
+    }
 }

@@ -124,7 +124,7 @@ See the parameters below to configure this script.
 from socket import socket, timeout, AF_UNIX, SOCK_STREAM, SOL_SOCKET, \
     SO_REUSEADDR, SO_PEERCRED
 from multiprocessing import Process, Queue, Pipe
-from subprocess import Popen, DEVNULL, PIPE
+from subprocess import Popen, run, DEVNULL, PIPE
 from filelock import FileLock, Timeout
 from setproctitle import setproctitle
 from signal import signal, SIGCHLD
@@ -157,6 +157,7 @@ watch_tcp = False  # TCP client getting UIDs from a TCP server
 
 # PC/SC parameters
 pcsc_read_every = 0.2  # s
+pcsc_read_timeout = 0.1
 
 # Serial parameters
 serial_read_every = 0.2  # s
@@ -1510,8 +1511,6 @@ def http_listener(main_in_q):
                 if content_length > 0 else ""
             post_data = json.loads(post_data)
 
-            print(post_data)
-
             # Does the POST data contain a valid UID?
             uid = post_data["UID"] if "UID" in post_data else ""
             action = post_data["action"] if "action" in post_data else ""
@@ -1568,9 +1567,29 @@ def http_listener(main_in_q):
 
                         # Reply
                         self.wfile.write(json.dumps(result).encode("utf-8"))
+                    elif action == "change_password":
+                        result = send_post_request({
+                            "NFC_Code": str(uid),
+                            "State": 18,
+                            "Password": post_data["Password"]
+                        })
+
+                        print(
+                            "User: " + post_data["Username"] + " & Pass: " + post_data["Password"])
+
+                        if result["State"] == 3:
+                            create_new_user(
+                                post_data["Username"], post_data["Password"])
+
+                        self.send_response(200)
+                        self.send_header('Content-type', 'application/json')
+                        self.end_headers()
+
+                        # Reply
+                        self.wfile.write(json.dumps(result).encode("utf-8"))
                     elif action == "check":
-                        current_nfc = Popen(
-                            '/usr/local/bin/ppnfc_getuids.py -w 0.1 -q', shell=True, stdout=PIPE)
+                        current_nfc = Popen('/usr/local/bin/ppnfc_getuids.py -w ' + str(
+                            pcsc_read_timeout) + ' -q', shell=True, stdout=PIPE)
                         nfc_out, err = current_nfc.communicate()
                         nfc_out = clean_nfc_code(nfc_out)
 
@@ -2155,12 +2174,22 @@ def send_post_request(json_data):
                           timeout=int(api_request_timeout))
         json_response = r.json()
         return json_response
-    except Timeout:
-        return 0
-    except TooManyRedirects:
-        return -1
-    except RequestException:
-        return -2
+    except requests.exceptions.HTTPError:
+        return {
+            "State": 0
+        }
+    except requests.exceptions.ConnectionError:
+        return {
+            "State": -1
+        }
+    except requests.exceptions.Timeout:
+        return {
+            "State": -3
+        }
+    except requests.exceptions.RequestException:
+        return {
+            "State": -4
+        }
 
 
 def clean_nfc_code(code):
@@ -2170,48 +2199,52 @@ def clean_nfc_code(code):
 
 def user_exists(username):
     try:
+        print(pwd.getpwnam(username))
         pwd.getpwnam(username)
         return True
     except KeyError:
         return False
 
 
+def create_user(username, password):
+    adduser = Popen('adduser --disabled-password --gecos "" ' + str(username) +
+                    ';echo "' + str(username) + ':' + str(password) + '" | chpasswd', shell=True)
+    out, err = adduser.communicate()
+
+
 def update_passwd(username, password):
-    passwd = Popen('echo -e "' + password + '\n' + password +
-                   '" | sudo passwd ' + username + ' &>/dev/null', shell=True)
-    passwd.communicate()
+    passwd = Popen('echo "' + str(username) + ':' +
+                   str(password) + '" | chpasswd', shell=True)
+    out, err = passwd.communicate()
 
 
 def remove_expiration(username):
-    chage = Popen('sudo chage -I -1 -m 0 -M 99999 -E -1 ' +
-                  username + '&>/dev/null', shell=True)
-    chage.communicate()
-
-
-def create_user(username, password):
-    adduser = Popen('sudo useradd -m ' + username + ' &>/dev/null; echo -e "' + password +
-                    '\n' + password + '" | sudo passwd ' + username + ' &>/dev/null', shell=True)
-    adduser.communicate()
+    chage = Popen('chage -I -1 -m 0 -M 99999 -E -1 ' +
+                  str(username) + '', shell=True)
+    out, err = chage.communicate()
 
 
 def add_nfc(username):
-    addnfc = Popen('sudo /usr/bin/python3 /usr/local/bin/ppnfc_adduser.py -a ' +
-                   username + '&>/dev/null', shell=True)
-    addnfc.communicate()
+    addnfc = Popen('/usr/bin/python3 /usr/local/bin/ppnfc_adduser.py -a ' +
+                   str(username) + '', shell=True)
+    out, err = addnfc.communicate()
 
 
 def remove_nfc(username):
-    addnfc = Popen('sudo /usr/bin/python3 /usr/local/bin/ppnfc_adduser.py -d ' +
-                   username + '&>/dev/null', shell=True)
-    addnfc.communicate()
+    addnfc = Popen('/usr/bin/python3 /usr/local/bin/ppnfc_adduser.py -d ' +
+                   str(username) + '', shell=True)
+    out, err = addnfc.communicate()
 
 
 def create_new_user(username, password):
-    if user_exists(username):
+    if user_exists(username) == True:
         update_passwd(username, password)
+        remove_nfc(username)
+        add_nfc(username)
         remove_expiration(username)
     else:
         create_user(username, password)
+        remove_nfc(username)
         add_nfc(username)
         remove_expiration(username)
 
