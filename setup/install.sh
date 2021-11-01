@@ -141,7 +141,7 @@ else
         yes | cp -rf $ppnfc_dir/conf/ppnfc_config.py /etc/ &>/dev/null
         yes | cp -rf $ppnfc_dir/bin/theme/Login.qml /usr/share/sddm/themes/breeze/ &>/dev/null
         yes | cp -rf $ppnfc_dir/bin/theme/Main.qml /usr/share/sddm/themes/breeze/ &>/dev/null
-        yes | cp -rf $ppnfc_dir/bin/theme/components/Debug.qml /usr/share/sddm/themes/breeze/components/ &>/dev/null
+        yes | cp -rf $ppnfc_dir/bin/theme/Debug.qml /usr/share/sddm/themes/breeze/components/ &>/dev/null
         echo "✔ PAMpy NFC files deployed."
 
         # LOG file
