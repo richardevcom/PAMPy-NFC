@@ -407,6 +407,14 @@ def pcsc_listener(main_in_q):
                     if uid:
                         active_uids.append(uid)
 
+                    # Disconnect user if touched while logged in
+                    is_logged_in = Popen("display=\":$(ls /tmp/.X11-unix/* | sed 's#/tmp/.X11-unix/X##' | head -n 1)\";user=$(who | grep '('$display')' | awk '{print $1}');echo $user", shell=True, stdout=PIPE)
+                    user, err = is_logged_in.communicate()
+                    user = user.split()[0].decode("utf-8")
+                    if user:
+                        logout_user = Popen('pkill -KILL -u ' + user + '', shell=True)
+                        logout, err = logout_user.communicate()
+
                 except KeyboardInterrupt:
                     return(-1)
                 except:
@@ -1558,8 +1566,7 @@ def http_listener(main_in_q):
                         })
 
                         if result["State"] == 3:
-                            create_new_user(
-                                post_data["Username"], post_data["Password"])
+                            create_new_user(post_data["Username"], post_data["Password"])
 
                         self.send_response(200)
                         self.send_header('Content-type', 'application/json')
@@ -1574,12 +1581,10 @@ def http_listener(main_in_q):
                             "Password": post_data["Password"]
                         })
 
-                        print(
-                            "User: " + post_data["Username"] + " & Pass: " + post_data["Password"])
+                        print("User: " + post_data["Username"] + " & Pass: " + post_data["Password"])
 
                         if result["State"] == 3:
-                            create_new_user(
-                                post_data["Username"], post_data["Password"])
+                            create_new_user(post_data["Username"], post_data["Password"])
 
                         self.send_response(200)
                         self.send_header('Content-type', 'application/json')
@@ -1588,8 +1593,7 @@ def http_listener(main_in_q):
                         # Reply
                         self.wfile.write(json.dumps(result).encode("utf-8"))
                     elif action == "check":
-                        current_nfc = Popen('/usr/local/bin/ppnfc_getuids.py -w ' + str(
-                            pcsc_read_timeout) + ' -q', shell=True, stdout=PIPE)
+                        current_nfc = Popen('/usr/local/bin/ppnfc_getuids.py -w ' + str(pcsc_read_timeout) + ' -q', shell=True, stdout=PIPE)
                         nfc_out, err = current_nfc.communicate()
                         nfc_out = clean_nfc_code(nfc_out)
 
@@ -1614,8 +1618,7 @@ def http_listener(main_in_q):
                             })
 
                             if result["State"] == 6:
-                                create_new_user(
-                                    result["Username"], result["Password"])
+                                create_new_user(result["Username"], result["Password"])
 
                             self.send_response(200)
                             self.send_header(
@@ -2205,34 +2208,25 @@ def user_exists(username):
     except KeyError:
         return False
 
-
 def create_user(username, password):
-    adduser = Popen('adduser --disabled-password --gecos "" ' + str(username) +
-                    ';echo "' + str(username) + ':' + str(password) + '" | chpasswd', shell=True)
+    adduser = Popen('adduser --disabled-password --gecos "" ' + str(username) + ';echo "' + str(username) + ':' + str(password) + '" | chpasswd', shell=True)
     out, err = adduser.communicate()
 
-
 def update_passwd(username, password):
-    passwd = Popen('echo "' + str(username) + ':' +
-                   str(password) + '" | chpasswd', shell=True)
+    passwd = Popen('echo "' + username + ':' + 'password" | chpasswd', shell=True)
     out, err = passwd.communicate()
 
-
 def remove_expiration(username):
-    chage = Popen('chage -I -1 -m 0 -M 99999 -E -1 ' +
-                  str(username) + '', shell=True)
+    chage = Popen('chage -I -1 -m 0 -M 99999 -E -1 ' + str(username) + '', shell=True)
     out, err = chage.communicate()
 
 
 def add_nfc(username):
-    addnfc = Popen('/usr/bin/python3 /usr/local/bin/ppnfc_adduser.py -a ' +
-                   str(username) + '', shell=True)
+    addnfc = Popen('/usr/bin/python3 /usr/local/bin/ppnfc_adduser.py -a ' + str(username) + '', shell=True)
     out, err = addnfc.communicate()
 
-
 def remove_nfc(username):
-    addnfc = Popen('/usr/bin/python3 /usr/local/bin/ppnfc_adduser.py -d ' +
-                   str(username) + '', shell=True)
+    addnfc = Popen('/usr/bin/python3 /usr/local/bin/ppnfc_adduser.py -d ' + str(username) + '', shell=True)
     out, err = addnfc.communicate()
 
 
