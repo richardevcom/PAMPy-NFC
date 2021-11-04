@@ -1,0 +1,11 @@
+[Unit]
+Description=PAMpy NFC / RFID readers automatic ENTER typer at login
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/ppnfc_auto_send_enter_at_login.py
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target
