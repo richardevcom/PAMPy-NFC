@@ -11,11 +11,11 @@ _(varat arī saglabāt savā tīklā un palaist to no sava tīkla)_<br/>
 # Lejupielādēt cURL
 sudo apt install curl
 # Lejupielādēt instalācijas failu
-#sudo wget https://raw.githubusercontent.com/richardevcom/PAMPy-NFC/main/setup/install.sh
-sudo wget https://gitlab.bkus.lv/richard.mucelan/PAMPy-NFC/main/setup/install.sh
+sudo wget https://raw.githubusercontent.com/richardevcom/PAMPy-NFC/main/setup/install.sh
 # Palaist instalācijas failu (obligāti jānorāda API servera adrese -u argumentam)
-sudo bash install.sh -u https://10.1.20.28/api/Values/GetValues/
+sudo bash install.sh -u http://server_ip/api/
 ```
+
 
 ⚠️ _Lūdzu pārliecinieties, ka esat norādījuši derīgu pilno API servera adresi, piemēram:_ `http://198.168.1.28/api/Values/GetValues/`
 
