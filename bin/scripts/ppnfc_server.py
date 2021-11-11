@@ -238,6 +238,8 @@ uids_translation_table = {}
 # very weak security check, but we leave it there just in case
 remote_user_parent_process_names = ["sshd", "telnetd"]
 
+# Lock or logout?
+logout_action = 'lock'
 
 # Try to read the alternative configuration file. Any variables redefined in
 # this file will override the parameters above
@@ -407,14 +409,22 @@ def pcsc_listener(main_in_q):
                     if uid:
                         active_uids.append(uid)
 
-                    # Disconnect user if touched while logged in
-                    is_logged_in = Popen("display=\":$(ls /tmp/.X11-unix/* | sed 's#/tmp/.X11-unix/X##' | head -n 1)\";user=$(who | grep '('$display')' | awk '{print $1}');echo $user", shell=True, stdout=PIPE)
-                    user, err = is_logged_in.communicate()
-                    user = user.split()[0].decode("utf-8")
-                    
-                    if user:
-                        get_user_session = Popen("loginctl lock-sessions",shell=True)
-                        user_session, err = get_user_session.communicate()
+                    try:
+                        # Disconnect user if touched while logged in
+                        is_logged_in = Popen("display=\":$(ls /tmp/.X11-unix/* | sed 's#/tmp/.X11-unix/X##' | head -n 1)\";user=$(who | grep '('$display')' | awk '{print $1}');echo $user", shell=True, stdout=PIPE)
+                        user, err = is_logged_in.communicate()
+                        user = user.split()[0].decode("utf-8")
+                        
+                        if user and logout_action == 'lock':
+                            get_user_session = Popen("loginctl lock-sessions",shell=True, stdout=PIPE)
+                            user_session, err = get_user_session.communicate()
+
+                        if user and logout_action == 'logout':
+                            get_user_session = Popen("sudo pkill -KILL -u " + user + "",shell=True, stdout=PIPE)
+                            user_session, err = get_user_session.communicate()
+                    except NameError:
+                        continue
+                        ## pass
 
                 except KeyboardInterrupt:
                     return(-1)
