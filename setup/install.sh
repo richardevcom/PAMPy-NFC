@@ -77,7 +77,7 @@ else
 
         # Pull repo files
         ppnfc_dir="$temp_dir/ppnfc"
-        ppnfc_repo="http://gitlab.bkus.lv/richard.mucelan/PAMPy-NFC.git"
+        ppnfc_repo="http://gitlab.bkus.lv/richardev/PAMPy-NFC.git"
         echo "❐ Cloning PAMpy NFC files from $ppnfc_repo..."
         # Remove previous repo if exists
         rm -rf $ppnfc_dir &>/dev/null
