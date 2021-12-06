@@ -1,11 +1,16 @@
+# PAMPy NFC solution
+
 <p align="center">
   <img src="https://gitlab.bkus.lv/richard.mucelan/PAMPy-NFC/-/raw/main/hero.png?raw=true" alt="NFC"/>
 </p>
 
-## Automātiskā instalācija
+## Instalācija
 
-Uzstādiet `wget` un palaidiet šo attālināto instalācijas skriptu:<br/>
-_(varat arī saglabāt savā tīklā un palaist to no sava tīkla)_<br/>
+<details>
+  <summary>1. Automātiskā instalācija</summary>
+  
+  Uzstādiet `wget` un palaidiet šo attālināto instalācijas skriptu:<br/>
+  _(varat arī saglabāt savā tīklā un palaist to no sava tīkla)_<br/>
 
 ```bash
 # Lejupielādēt cURL
@@ -18,7 +23,10 @@ sudo bash install.sh -u http://server_ip/api/
 
 ⚠️ _Lūdzu pārliecinieties, ka esat norādījuši derīgu pilno API servera adresi, piemēram:_ `http://127.0.0.1/api/Values/GetValues/`
 
-## Manuāla instalācija
+</details>
+
+<details>
+  <summary>2. Manuāla instalācija</summary>
 
 1. Pirms uzsākšanas, pārliecinies, ka esi VPN tīklā.
 2. Atjaunini sistēmu un tās pakotnes
@@ -134,6 +142,8 @@ auth    [success=2 default=ignore]    pam_exec.so quiet /usr/local/bin/ppnfc_pam
 auth    [success=1 default=ignore]    pam_sss.so use_first_pass
 ```
 
+</details>
+
 ## Konfigurācija
 
 Šis risinājums izmanto `/etc/ppnfc_config.py` Python3 failu kā konfigurācijas failu, lai pārrakstītu jeb kuras noklusējuma vērtības iekš `ppnfc_server.py` servera faila.
@@ -161,4 +171,6 @@ pcsc_read_timeout = 0.2 # (n) laiks sekundēs, pēc kura pārtraukt gaidīt NFC 
 
 ## Papildus
 
-Iekš `PAMPy-NFC-main/bin/` mapes atrodas fails `ppnfc_usb_reset` - tas ir paredzēts gadījumā, ja NFC lasītājs "uzkaras", vai pašrocīgi izslēdzas.
+- Iekš `PAMPy-NFC-main/bin/` mapes atrodas fails `ppnfc_usb_reset` - tas ir paredzēts gadījumā, ja NFC lasītājs "uzkaras", vai pašrocīgi izslēdzas.
+- Risinājums ir izveidots uz [SiRFIDaL](https://github.com/Giraut/SiRFIDaL) bāzes.
+- Šis risinājums atbalsta Ubuntu/Kubuntu 18* versiju. Teorētiski tai ir jādarbojas arī uz 20* versijām, tomēr tā nav pilnībā notestēta uz tām.
