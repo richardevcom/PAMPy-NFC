@@ -16,8 +16,7 @@ sudo wget https://gitlab.bkus.lv/richardev/PAMPy-NFC/-/raw/main/setup/install.sh
 sudo bash install.sh -u http://server_ip/api/
 ```
 
-
-⚠️ _Lūdzu pārliecinieties, ka esat norādījuši derīgu pilno API servera adresi, piemēram:_ `http://198.168.1.28/api/Values/GetValues/`
+⚠️ _Lūdzu pārliecinieties, ka esat norādījuši derīgu pilno API servera adresi, piemēram:_ `http://127.0.0.1/api/Values/GetValues/`
 
 ## Manuāla instalācija
 
@@ -143,11 +142,11 @@ auth    [success=1 default=ignore]    pam_sss.so use_first_pass
 nano /etc/ppnfc_config.py
 
 # General - skatiet failus iekš /usr/local/bin - lai redzētu, kādus mainīgos varat rediģēt šajā konfigurācijā.
-logout_action = 'logout'  # Izlogot vai slēgt sesiju?
+logout_action = 'logout'  # `logout` vai `lock` - izlogot vai slēgt sesiju?
 
 # API (attālināts API serviss)
 api_endpoint = "http://127.0.0.1/api/Values/GetValues/"  # API avota pamata URL adrese
-api_request_timeout = 5                                   # (n) laiks sekundēs, pēc kura pārtaukt API pieprasījumu
+api_request_timeout = 10                                  # (n) laiks sekundēs, pēc kura pārtaukt API pieprasījumu
 
 # HTTP
 http_read_every = 0.2                   # nolasīt HTTP pieprasījumu ik (n) sekundes
@@ -155,7 +154,7 @@ http_uid_not_sent_inactive_timeout = 1  # (n) laiks sekundēs, pēc kura pātrau
 
 # PCSC
 pcsc_read_every = 0.2   # nolasīt NFC lasītāju ik (n) sekundes
-pcsc_read_timeout = 0.1 # (n) laiks sekundēs, pēc kura pārtraukt gaidīt NFC lasījumu
+pcsc_read_timeout = 0.2 # (n) laiks sekundēs, pēc kura pārtraukt gaidīt NFC lasījumu
 
 # ...
 ```

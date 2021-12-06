@@ -119,7 +119,8 @@ SessionManagementScreen {
                 }else if([0, -1, -3, -4].indexOf(djson["State"]) >= 0){
                     //debug
                     debug.log("error","Connection error: <b>State " + djson["State"] + "</b>")
-
+                    
+                    passwordBox.forceActiveFocus()
                     root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Kļūda savienojumā ar Codelex API serveri!")
                 }else{
                     if(calledFrom == 'username'){
@@ -192,6 +193,12 @@ SessionManagementScreen {
      * Authorize PIN code
      */
     function authPin(){
+        if(pinBox.text == '') {
+            root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Lūdzu norādiet PIN kodu.")
+            pinBox.forceActiveFocus()
+            return false
+        }
+
         if(pinBox.text == temp["pin"]){
             root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","PIN kods pareizs. Autorizē...")
             makeRequest({
@@ -218,6 +225,24 @@ SessionManagementScreen {
         root.clearNotification = false
         root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Reģistrē... Uzgaidiet!")
 
+        if(userNameInputRegister.text == '') {
+            root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Lūdzu norādiet lietotājvārdu.")
+            userNameInputRegister.forceActiveFocus()
+            return false
+        }
+
+        if(passwordBoxRegister.text == '') {
+            root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Lūdzu norādiet paroli.")
+            passwordBoxRegister.forceActiveFocus()
+            return false
+        }
+
+        if(pinBoxRegister.text == '') {
+            root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Lūdzu norādiet PIN kodu.")
+            pinBoxRegister.forceActiveFocus()
+            return false
+        }
+
         makeRequest({
             "action":"register",
             "UID": String(temp["nfc"]),
@@ -234,9 +259,11 @@ SessionManagementScreen {
                     root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Reģistrācija veiksmīga!")
                     userNameInput.text = temp["username"]
                 }else{
+                    userNameInputRegister.forceActiveFocus()
                     root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Nevarēja reģistrēt! Mēģiniet vēlreiz.")
                 }
             }else{
+                userNameInputRegister.forceActiveFocus()
                 root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Nevarēja reģistrēt! Mēģiniet vēlreiz.")
             }    
         })
@@ -245,14 +272,33 @@ SessionManagementScreen {
     /**
      * Authorize password change
      */
-    function authChangePassword(final_password){
+    function authChangePassword(old_password, final_password){
         root.clearNotification = false
         root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Atjaunina paroli... Uzgaidiet!")
+
+        if(old_password == final_password) {
+            root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Paroles nevar būt vienādas.")
+            passwordBoxChange1.forceActiveFocus()
+            return false
+        }
+
+        if(old_password == '') {
+            root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Vecā parole nevar būt tukša.")
+            passwordBoxChange1.forceActiveFocus()
+            return false
+        }
+
+        if(final_password == '') {
+            root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Jaunā parole nevar būt tukša.")
+            passwordBoxChange2.forceActiveFocus()
+            return false
+        }
 
         makeRequest({
             "action":"change_password",
             "UID": String(temp["nfc"]),
             "Username": temp["username"],
+            "OldPassword":old_password,
             "Password": final_password
         }, function(status, response){
             var djson = JSON.parse(response)
@@ -264,9 +310,11 @@ SessionManagementScreen {
                     root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Parole atjaunināta!")
                     userNameInput.text = temp["username"]
                 }else{
+                    passwordBoxChange1.forceActiveFocus()
                     root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Nevarēja atjaunināt paroli! Mēģiniet vēlreiz.")
                 }
             }else{
+                passwordBoxChange1.forceActiveFocus()
                 root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Nevarēja atjaunināt paroli! Mēģiniet vēlreiz.")
             }    
         })
@@ -440,21 +488,10 @@ SessionManagementScreen {
             revealPasswordButtonShown: true
             text: ""
             visible: false
-            placeholderText: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Parole")
+            placeholderText: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Vecā parole")
 
             onAccepted: {
-                if(passwordBoxChange1.text.length == 0) {
-                    root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Lūdzu norādiet jauno paroli.")
-                }else {
-                    if(passwordBoxChange1.text !== passwordBoxChange2.text) {
-                        root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Paroles nesakrīt. Lūdzu atkārtojiet paroli...")
-                        passwordBoxChange2.text = ""
-                        passwordBoxChange2.forceActiveFocus()
-                    }else{
-                        passwordBoxChange2.forceActiveFocus()
-                        authChangePassword(passwordBoxChange2.text)
-                    }
-                }
+                authChangePassword(passwordBoxChange1.text, passwordBoxChange2.text)
             }
         }
 
@@ -470,21 +507,10 @@ SessionManagementScreen {
             revealPasswordButtonShown: true
             text: ""
             visible: false
-            placeholderText: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Parole atkārtoti")
+            placeholderText: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Jaunā parole")
 
             onAccepted: {
-                if(passwordBoxChange2.text.length == 0) {
-                    root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Lūdzu atkārtojiet paroli.")
-                }else {
-                    if(passwordBoxChange1.text !== passwordBoxChange2.text) {
-                        root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Paroles nesakrīt. Lūdzu atkārtojiet paroli...")
-                        passwordBoxChange2.text = ""
-                        passwordBoxChange2.forceActiveFocus()
-                    }else{
-                        passwordBoxChange2.forceActiveFocus()
-                        authChangePassword(passwordBoxChange2.text)
-                    }
-                }
+                authChangePassword(passwordBoxChange1.text, passwordBoxChange2.text)
             }
         }
 
@@ -631,7 +657,7 @@ SessionManagementScreen {
     }
 
     /**
-     * Set REGISTER UI visual state
+     * Set change pass UI visual state
      */
     function changePasswordUi() {
         userNameInput.visible = false
@@ -645,6 +671,8 @@ SessionManagementScreen {
         loginButton.visible = false
         registerButton.visible = false
 
+        passwordBoxChange1.text = ''
+        passwordBoxChange2.text = ''
 
         passwordBoxChange1.visible = true
         passwordBoxChange2.visible = true

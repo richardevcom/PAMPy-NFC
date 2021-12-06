@@ -152,7 +152,6 @@ watch_adb = False  # Android device used as an external NFC reader
 watch_pm3 = False  # Proxmark3 reader used as a "dumb" UID reader
 watch_chameleon = False  # Chameleon Mini / Tiny used as an external NFC reader
 watch_ufr = False  # uFR or uFR Nano Online reader in slave mode
-watch_http = True  # HTTP server getting UIDs using the GET or POST method
 watch_tcp = False  # TCP client getting UIDs from a TCP server
 
 # PC/SC parameters
@@ -411,20 +410,23 @@ def pcsc_listener(main_in_q):
 
                     try:
                         # Disconnect user if touched while logged in
-                        is_logged_in = Popen("display=\":$(ls /tmp/.X11-unix/* | sed 's#/tmp/.X11-unix/X##' | head -n 1)\";user=$(who | grep '('$display')' | awk '{print $1}');echo $user", shell=True, stdout=PIPE)
+                        is_logged_in = Popen(
+                            "display=\":$(ls /tmp/.X11-unix/* | sed 's#/tmp/.X11-unix/X##' | head -n 1)\";user=$(who | grep '('$display')' | awk '{print $1}');echo $user", shell=True, stdout=PIPE)
                         user, err = is_logged_in.communicate()
                         user = user.split()[0].decode("utf-8")
-                        
+
                         if user and logout_action == 'lock':
-                            get_user_session = Popen("loginctl lock-sessions",shell=True, stdout=PIPE)
+                            get_user_session = Popen(
+                                "loginctl lock-sessions", shell=True, stdout=PIPE)
                             user_session, err = get_user_session.communicate()
 
                         if user and logout_action == 'logout':
-                            get_user_session = Popen("sudo pkill -KILL -u " + user + "",shell=True, stdout=PIPE)
+                            get_user_session = Popen(
+                                "sudo pkill -KILL -u " + user + "", shell=True, stdout=PIPE)
                             user_session, err = get_user_session.communicate()
                     except NameError:
                         continue
-                        ## pass
+                        # pass
 
                 except KeyboardInterrupt:
                     return(-1)
@@ -533,6 +535,26 @@ def serial_listener(main_in_q):
                 if uid not in uid_lastseens:
                     send_active_uids_update = True
                 uid_lastseens[uid] = tstamp
+
+            try:
+                # Disconnect user if touched while logged in
+                is_logged_in = Popen(
+                    "display=\":$(ls /tmp/.X11-unix/* | sed 's#/tmp/.X11-unix/X##' | head -n 1)\";user=$(who | grep '('$display')' | awk '{print $1}');echo $user", shell=True, stdout=PIPE)
+                user, err = is_logged_in.communicate()
+                user = user.split()[0].decode("utf-8")
+
+                if user and logout_action == 'lock':
+                    get_user_session = Popen(
+                        "loginctl lock-sessions", shell=True, stdout=PIPE)
+                    user_session, err = get_user_session.communicate()
+
+                if user and logout_action == 'logout':
+                    get_user_session = Popen(
+                        "sudo pkill -KILL -u " + user + "", shell=True, stdout=PIPE)
+                    user_session, err = get_user_session.communicate()
+            except NameError:
+                continue
+                # pass
 
         # Remove UID timestamps that are too old from the last-seen list
         for uid in list(uid_lastseens):
@@ -671,6 +693,26 @@ def hid_listener(main_in_q):
                     send_active_uids_update = True
 
                 active_uid_expires[uid] = now + hid_simulate_uid_stays_active
+
+                try:
+                    # Disconnect user if touched while logged in
+                    is_logged_in = Popen(
+                        "display=\":$(ls /tmp/.X11-unix/* | sed 's#/tmp/.X11-unix/X##' | head -n 1)\";user=$(who | grep '('$display')' | awk '{print $1}');echo $user", shell=True, stdout=PIPE)
+                    user, err = is_logged_in.communicate()
+                    user = user.split()[0].decode("utf-8")
+
+                    if user and logout_action == 'lock':
+                        get_user_session = Popen(
+                            "loginctl lock-sessions", shell=True, stdout=PIPE)
+                        user_session, err = get_user_session.communicate()
+
+                    if user and logout_action == 'logout':
+                        get_user_session = Popen(
+                            "sudo pkill -KILL -u " + user + "", shell=True, stdout=PIPE)
+                        user_session, err = get_user_session.communicate()
+                except NameError:
+                    continue
+                    # pass
 
         # Timeout
         else:
@@ -843,6 +885,26 @@ def adb_listener(main_in_q):
             # list of active UIDs empty instead
             active_uids = [] if adb_persistent_mode and not tag_present \
                 else sorted(uid_lastseens)
+
+            try:
+                # Disconnect user if touched while logged in
+                is_logged_in = Popen(
+                    "display=\":$(ls /tmp/.X11-unix/* | sed 's#/tmp/.X11-unix/X##' | head -n 1)\";user=$(who | grep '('$display')' | awk '{print $1}');echo $user", shell=True, stdout=PIPE)
+                user, err = is_logged_in.communicate()
+                user = user.split()[0].decode("utf-8")
+
+                if user and logout_action == 'lock':
+                    get_user_session = Popen(
+                        "loginctl lock-sessions", shell=True, stdout=PIPE)
+                    user_session, err = get_user_session.communicate()
+
+                if user and logout_action == 'logout':
+                    get_user_session = Popen(
+                        "sudo pkill -KILL -u " + user + "", shell=True, stdout=PIPE)
+                    user_session, err = get_user_session.communicate()
+            except NameError:
+                continue
+                # pass
 
             # ...send the list to the main process...
             main_in_q.put([ADB_LISTENER_UIDS_UPDATE, active_uids])
@@ -1083,6 +1145,26 @@ def pm3_listener(workdir, main_in_q):
                     active_uids = sorted(active_uids + [uid])
                     send_active_uids_update = True
 
+            try:
+                # Disconnect user if touched while logged in
+                is_logged_in = Popen(
+                    "display=\":$(ls /tmp/.X11-unix/* | sed 's#/tmp/.X11-unix/X##' | head -n 1)\";user=$(who | grep '('$display')' | awk '{print $1}');echo $user", shell=True, stdout=PIPE)
+                user, err = is_logged_in.communicate()
+                user = user.split()[0].decode("utf-8")
+
+                if user and logout_action == 'lock':
+                    get_user_session = Popen(
+                        "loginctl lock-sessions", shell=True, stdout=PIPE)
+                    user_session, err = get_user_session.communicate()
+
+                if user and logout_action == 'logout':
+                    get_user_session = Popen(
+                        "sudo pkill -KILL -u " + user + "", shell=True, stdout=PIPE)
+                    user_session, err = get_user_session.communicate()
+            except NameError:
+                continue
+                # pass
+
         # If the list of active UIDs has changed, send it to the main process
         if send_active_uids_update:
             main_in_q.put([PM3_LISTENER_UIDS_UPDATE, active_uids])
@@ -1313,6 +1395,26 @@ def chameleon_listener(main_in_q):
                     send_active_uids_update = True
                 uid_lastseens[uid] = tstamp
 
+            try:
+                # Disconnect user if touched while logged in
+                is_logged_in = Popen(
+                    "display=\":$(ls /tmp/.X11-unix/* | sed 's#/tmp/.X11-unix/X##' | head -n 1)\";user=$(who | grep '('$display')' | awk '{print $1}');echo $user", shell=True, stdout=PIPE)
+                user, err = is_logged_in.communicate()
+                user = user.split()[0].decode("utf-8")
+
+                if user and logout_action == 'lock':
+                    get_user_session = Popen(
+                        "loginctl lock-sessions", shell=True, stdout=PIPE)
+                    user_session, err = get_user_session.communicate()
+
+                if user and logout_action == 'logout':
+                    get_user_session = Popen(
+                        "sudo pkill -KILL -u " + user + "", shell=True, stdout=PIPE)
+                    user_session, err = get_user_session.communicate()
+            except NameError:
+                continue
+                # pass
+
         # Remove UID timestamps that are too old from the last-seen list
         for uid in list(uid_lastseens):
             if tstamp - uid_lastseens[uid] > chameleon_uid_not_sent_inactive_timeout:
@@ -1482,6 +1584,26 @@ def ufr_listener(main_in_q):
                 if uids == last_sent_uids:
                     send_update = False
 
+        try:
+            # Disconnect user if touched while logged in
+            is_logged_in = Popen(
+                "display=\":$(ls /tmp/.X11-unix/* | sed 's#/tmp/.X11-unix/X##' | head -n 1)\";user=$(who | grep '('$display')' | awk '{print $1}');echo $user", shell=True, stdout=PIPE)
+            user, err = is_logged_in.communicate()
+            user = user.split()[0].decode("utf-8")
+
+            if user and logout_action == 'lock':
+                get_user_session = Popen(
+                    "loginctl lock-sessions", shell=True, stdout=PIPE)
+                user_session, err = get_user_session.communicate()
+
+            if user and logout_action == 'logout':
+                get_user_session = Popen(
+                    "sudo pkill -KILL -u " + user + "", shell=True, stdout=PIPE)
+                user_session, err = get_user_session.communicate()
+        except NameError:
+            continue
+            # pass
+
         # Should we send an updated list of UIDs to the main process?
         if send_update:
 
@@ -1577,7 +1699,8 @@ def http_listener(main_in_q):
                         })
 
                         if result["State"] == 3:
-                            create_new_user(post_data["Username"], post_data["Password"])
+                            create_new_user(
+                                post_data["Username"], post_data["Password"])
 
                         self.send_response(200)
                         self.send_header('Content-type', 'application/json')
@@ -1589,11 +1712,13 @@ def http_listener(main_in_q):
                         result = send_post_request({
                             "NFC_Code": str(uid),
                             "State": 18,
+                            "OldPassword": post_data["OldPassword"],
                             "Password": post_data["Password"]
                         })
 
                         if result["State"] == 3:
-                            create_new_user(post_data["Username"], post_data["Password"])
+                            create_new_user(
+                                post_data["Username"], post_data["Password"])
 
                         self.send_response(200)
                         self.send_header('Content-type', 'application/json')
@@ -1602,7 +1727,8 @@ def http_listener(main_in_q):
                         # Reply
                         self.wfile.write(json.dumps(result).encode("utf-8"))
                     elif action == "check":
-                        current_nfc = Popen('/usr/local/bin/ppnfc_getuids.py -w ' + str(pcsc_read_timeout) + ' -q', shell=True, stdout=PIPE)
+                        current_nfc = Popen('/usr/local/bin/ppnfc_getuids.py -w ' + str(
+                            pcsc_read_timeout) + ' -q', shell=True, stdout=PIPE)
                         nfc_out, err = current_nfc.communicate()
                         nfc_out = clean_nfc_code(nfc_out)
 
@@ -1627,7 +1753,8 @@ def http_listener(main_in_q):
                             })
 
                             if result["State"] == 6:
-                                create_new_user(result["Username"], result["Password"])
+                                create_new_user(
+                                    result["Username"], result["Password"])
 
                             self.send_response(200)
                             self.send_header(
@@ -2216,25 +2343,34 @@ def user_exists(username):
     except KeyError:
         return False
 
+
 def create_user(username, password):
-    adduser = Popen('adduser --disabled-password --gecos "" ' + str(username) + ';echo "' + str(username) + ':' + str(password) + '" | chpasswd', shell=True)
+    adduser = Popen('adduser --disabled-password --gecos "" ' + str(username) +
+                    ';echo "' + str(username) + ':' + str(password) + '" | chpasswd', shell=True)
     out, err = adduser.communicate()
 
+
 def update_passwd(username, password):
-    passwd = Popen('echo "' + username + ':' + 'password" | chpasswd', shell=True)
+    passwd = Popen('echo "' + username + ':' +
+                   'password" | chpasswd', shell=True)
     out, err = passwd.communicate()
 
+
 def remove_expiration(username):
-    chage = Popen('chage -I -1 -m 0 -M 99999 -E -1 ' + str(username) + '', shell=True)
+    chage = Popen('chage -I -1 -m 0 -M 99999 -E -1 ' +
+                  str(username) + '', shell=True)
     out, err = chage.communicate()
 
 
 def add_nfc(username):
-    addnfc = Popen('/usr/bin/python3 /usr/local/bin/ppnfc_adduser.py -a ' + str(username) + '', shell=True)
+    addnfc = Popen('/usr/bin/python3 /usr/local/bin/ppnfc_adduser.py -a ' +
+                   str(username) + '', shell=True)
     out, err = addnfc.communicate()
 
+
 def remove_nfc(username):
-    addnfc = Popen('/usr/bin/python3 /usr/local/bin/ppnfc_adduser.py -d ' + str(username) + '', shell=True)
+    addnfc = Popen('/usr/bin/python3 /usr/local/bin/ppnfc_adduser.py -d ' +
+                   str(username) + '', shell=True)
     out, err = addnfc.communicate()
 
 
@@ -2335,8 +2471,8 @@ def main():
         Process(target=ufr_listener, args=(main_in_q,)).start()
 
     # Start the HTTP server listener
-    if watch_http:
-        Process(target=http_listener, args=(main_in_q,)).start()
+    # @richardev - since we are using this one for SDDM this has to be always running
+    Process(target=http_listener, args=(main_in_q,)).start()
 
     # Start the TCP listener
     if watch_tcp:

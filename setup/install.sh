@@ -79,11 +79,21 @@ else
         ppnfc_dir="$temp_dir/ppnfc"
         ppnfc_repo="http://gitlab.bkus.lv/richardev/PAMPy-NFC.git"
         echo "❐ Cloning PAMpy NFC files from $ppnfc_repo..."
+        
         # Remove previous repo if exists
         rm -rf $ppnfc_dir &>/dev/null
+
         # Clone files
         git clone $ppnfc_repo $ppnfc_dir &>/dev/null
-        echo "✔ PAMpy NFC files cloned into $ppnfc_dir"
+
+        # Check if git cloned
+        if [ ! -d $ppnfc_dir ]
+        then
+            echo "✖ Error cloning files into $ppnfc_dir via Git. Exiting..."
+            exit 1
+        else
+            echo "✔ PAMpy NFC files cloned into $ppnfc_dir"
+        fi
 
         # Install PCSC tools
         echo "❐ Installing PC/SC tools..."
@@ -125,7 +135,7 @@ else
 
         # Install python packages
         echo "❐ Installing Python & Python modules..."
-        apt-get -y install python3 python3-pip python3-pyscard python3-evdev python3-serial python3-filelock python3-psutil python3-cryptography python3-xdo python3-setproctitle python3-requests python3-xlib &>/dev/null
+        apt-get -y install python3 python3-pyscard python3-serial python3-filelock python3-psutil python3-setproctitle python3-requests python3-cryptography python3-xdo python3-xlib &>/dev/null
         echo "✔ Python & Python modules installed."
 
         # Rewrite URL for config
@@ -154,11 +164,11 @@ else
         chown -R root:root /usr/local/bin/ppnfc_* &>/dev/null
         chown -R root:root /lib/systemd/system/ppnfc_* &>/dev/null
         chown -R root:root /etc/ppnfc_config.py &>/dev/null
-        # chown -R root:root /etc/profile.d/ppnfc_display &>/dev/null
+
         chmod +x /usr/local/bin/ppnfc_* &>/dev/null
         chmod +x /lib/systemd/system/ppnfc_* &>/dev/null
         chmod +x /etc/ppnfc_config.py &>/dev/null
-        # chmod +x /etc/profile.d/ppnfc_display &>/dev/null
+
         # Log
         # chown -R root:root /var/log/ppnfc.log &>/dev/null
         # chmod 0644 /var/log/ppnfc.log &>/dev/null
@@ -166,8 +176,6 @@ else
 
         # Enable & start PAMpy NFC
         echo "❐ Enable & start PAMpy NFC services"
-        # systemctl enable ppnfc_beep &>/dev/null
-        # systemctl start ppnfc_beep &>/dev/null
 
         systemctl enable ppnfc_server &>/dev/null
         systemctl start ppnfc_server &>/dev/null
@@ -186,10 +194,7 @@ else
         echo "✔ nodelay parameteer added to Unix PAM."
 
         echo "❐ Configuring PAM..."
-        ### THIS CONFLICTS ### @richardev
-        # sudo DEBIAN_FRONTEND=noninteractive pam-auth-update --force &>/dev/null
-        # sudo pam-auth-update --package &>/dev/null
-        ######################
+
         grep -Eo 'auth\s+\[success=([0-9])' /etc/pam.d/common-auth | while read -r line ; do
         current_index=$(echo "$line" | grep '[0-9]' -o)
         new_index=$(expr $current_index + 1)
@@ -199,17 +204,16 @@ else
         sed -i '/auth\s*\t*\[success=2/a auth\t[success=1 default=ignore]\tpam_exec.so seteuid debug /usr/local/bin/ppnfc_pam.py' /etc/pam.d/common-auth
         echo "✔ Done configuring PAM."
         
-        # display_size=$(xdpyinfo | grep dimensions | sed -r 's/^[^0-9]*([0-9]+x[0-9]+).*$/\1/')
-        # display_width=$(cut -d'x' -f1 <<<"$display_size")
-        # display_height=$(cut -d'x' -f2 <<<"$display_size")
-        # popup_width=400
-        # popup_height=150
-        # posx=$(( ($display_width/2) - (popup_width/2) ))
-        # posy=$(( ($display_height/2) - (popup_height/2) ))
+        display_size=$(xdpyinfo | grep dimensions | sed -r 's/^[^0-9]*([0-9]+x[0-9]+).*$/\1/')
+        display_width=$(cut -d'x' -f1 <<<"$display_size")
+        display_height=$(cut -d'x' -f2 <<<"$display_size")
+        popup_width=400
+        popup_height=150
+        posx=$(( ($display_width/2) - (popup_width/2) ))
+        posy=$(( ($display_height/2) - (popup_height/2) ))
 
-        # echo "✔ Scheduled device reboot in 5min!"
-        # kdialog --geometry $popup_width\x$popup_height+$posx+$posy --title "BKUS | Uzmanību!" --error "Administrātors atjaunināja jūsu darbstaciju.\nJūsu ierīce tiks restartēta 3 minūšu laikā.\nLūdzu saglabājiet visu nepieciešamo.\nJa esat gatavi, varat pašrocīgi restartēt darbstaciju." &>/dev/null
-        # ( sleep 180 ; reboot ) & 
+        echo "✔ Installation successfull screen sent!"
+        kdialog --geometry $popup_width\x$popup_height+$posx+$posy --title "PPNFC instalēts!" --msgbox "Risinājums PPNFC tika veiksmīgi uzstādīts uz šīs darbstacijas.\nNav nepieciešams veikt nekādas citas darbības, tāpēc Jūs varat aizvērt šo logu un turpināt darbu." &>/dev/null
     fi
 fi
 
