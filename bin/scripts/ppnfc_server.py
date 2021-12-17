@@ -1712,8 +1712,8 @@ def http_listener(main_in_q):
                         result = send_post_request({
                             "NFC_Code": str(uid),
                             "State": 18,
-                            "OldPassword": post_data["OldPassword"],
-                            "Password": post_data["Password"]
+                            "OldPassword": str(post_data["OldPassword"]),
+                            "Password": str(post_data["Password"])
                         })
 
                         if result["State"] == 3:

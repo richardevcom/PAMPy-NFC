@@ -67,7 +67,7 @@ SessionManagementScreen {
                 if([6, 7, 17, 20].indexOf(djson["State"]) >= 0){
 
                     /** CARD FOUND - ASK PIN **/
-                    if(djson["State"] == 6) {
+                    if(djson["State"] === 6) {
                         debug.log("info", "NFC found. Authorizing...")
 
                         temp["username"]    = djson["Username"]
@@ -83,7 +83,7 @@ SessionManagementScreen {
                     }
 
                     /** CARD NOT FOUND - REGISTER **/
-                    if(djson["State"] == 7) {
+                    if(djson["State"] === 7) {
                         debug.log("info", "NFC not found. Registering...")
 
                         temp["nfc"]         = uid
@@ -94,7 +94,7 @@ SessionManagementScreen {
                     }
 
                     /** CARD PASSWORD EXPIRED - CHANGE PASSWORD **/
-                    if(djson["State"] == 17) {
+                    if(djson["State"] === 17) {
                         debug.log("info", "Password expired. Change password!")
 
                         temp["nfc"]         = uid
@@ -106,7 +106,7 @@ SessionManagementScreen {
                     }
 
                     /** CARD BANNED **/
-                    if(djson["State"] == 20) {
+                    if(djson["State"] === 20) {
                         root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","NFC karte ir bloķēta!")
 
                         temp["nfc"]         = uid
@@ -193,7 +193,7 @@ SessionManagementScreen {
      * Authorize PIN code
      */
     function authPin(){
-        if(pinBox.text == '') {
+        if(pinBox.text.length == 0) {
             root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Lūdzu norādiet PIN kodu.")
             pinBox.forceActiveFocus()
             return false
@@ -225,19 +225,19 @@ SessionManagementScreen {
         root.clearNotification = false
         root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Reģistrē... Uzgaidiet!")
 
-        if(userNameInputRegister.text == '') {
+        if(userNameInputRegister.text.length == 0) {
             root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Lūdzu norādiet lietotājvārdu.")
             userNameInputRegister.forceActiveFocus()
             return false
         }
 
-        if(passwordBoxRegister.text == '') {
+        if(passwordBoxRegister.text.length == 0) {
             root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Lūdzu norādiet paroli.")
             passwordBoxRegister.forceActiveFocus()
             return false
         }
 
-        if(pinBoxRegister.text == '') {
+        if(pinBoxRegister.text.length == 0) {
             root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Lūdzu norādiet PIN kodu.")
             pinBoxRegister.forceActiveFocus()
             return false
@@ -246,15 +246,18 @@ SessionManagementScreen {
         makeRequest({
             "action":"register",
             "UID": String(temp["nfc"]),
-            "Username": userNameInputRegister.text,
-            "Password": passwordBoxRegister.text,
-            "Pin": pinBoxRegister.text
+            "Username": String(userNameInputRegister.text),
+            "Password": String(passwordBoxRegister.text),
+            "Pin": String(pinBoxRegister.text)
         }, function(status, response){
+
             var djson = JSON.parse(response)
+
+            debug.log("info", "Response State: " + djson["State"])
 
             if(djson["State"] !== undefined) {
 
-                if(djson["State"] == 3){
+                if(djson["State"] === 3){
                     resetUi()
                     root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Reģistrācija veiksmīga!")
                     userNameInput.text = temp["username"]
@@ -272,50 +275,48 @@ SessionManagementScreen {
     /**
      * Authorize password change
      */
-    function authChangePassword(old_password, final_password){
+    function authChangePassword(){
         root.clearNotification = false
         root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Atjaunina paroli... Uzgaidiet!")
 
-        if(old_password == final_password) {
-            root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Paroles nevar būt vienādas.")
-            passwordBoxChange1.forceActiveFocus()
-            return false
-        }
-
-        if(old_password == '') {
+        if(passwordBoxChange1.text.length == 0) {
             root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Vecā parole nevar būt tukša.")
             passwordBoxChange1.forceActiveFocus()
             return false
         }
 
-        if(final_password == '') {
+        if(passwordBoxChange2.text.length == 0) {
             root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Jaunā parole nevar būt tukša.")
             passwordBoxChange2.forceActiveFocus()
             return false
         }
 
+        debug.log("info", "Requesting to change password for " + temp["user"] + " (" + temp["nfc"] + ") with password " + passwordBoxChange1.text + " to " + passwordBoxChange2.text)
+
         makeRequest({
             "action":"change_password",
             "UID": String(temp["nfc"]),
-            "Username": temp["username"],
-            "OldPassword":old_password,
-            "Password": final_password
+            "Username": String(temp["username"]),
+            "OldPassword":String(passwordBoxChange1.text),
+            "Password": String(passwordBoxChange2.text)
         }, function(status, response){
             var djson = JSON.parse(response)
 
+            debug.log("info", "Response State: " + djson["State"])
+
             if(djson["State"] !== undefined) {
-                if(djson["State"] == 3){
+                if(djson["State"] === 3){
                     resetUi()
 
                     root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Parole atjaunināta!")
                     userNameInput.text = temp["username"]
                 }else{
                     passwordBoxChange1.forceActiveFocus()
-                    root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Nevarēja atjaunināt paroli! Mēģiniet vēlreiz.")
+                    root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","#1 Nevarēja atjaunināt paroli! Mēģiniet vēlreiz.")
                 }
             }else{
                 passwordBoxChange1.forceActiveFocus()
-                root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","Nevarēja atjaunināt paroli! Mēģiniet vēlreiz.")
+                root.notificationMessage = i18nd("plasma_lookandfeel_org.kde.lookandfeel","#2 Nevarēja atjaunināt paroli! Mēģiniet vēlreiz.")
             }    
         })
     }
@@ -491,7 +492,7 @@ SessionManagementScreen {
             placeholderText: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Vecā parole")
 
             onAccepted: {
-                authChangePassword(passwordBoxChange1.text, passwordBoxChange2.text)
+                authChangePassword()
             }
         }
 
@@ -510,7 +511,7 @@ SessionManagementScreen {
             placeholderText: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Jaunā parole")
 
             onAccepted: {
-                authChangePassword(passwordBoxChange1.text, passwordBoxChange2.text)
+                authChangePassword()
             }
         }
 
@@ -602,12 +603,18 @@ SessionManagementScreen {
         backButton.Layout.rowSpan = 3
 
         userNameInput.text = temp["username"]
+        temp["username"] = ""
+        temp["password"] = ""
+        temp["pin"] = ""
+        temp["nfc"] = ""
+
         passwordBox.text = ""
         pinBox.text = ""
+        passwordBoxRegister.text = ""
+        passwordBoxChange1.text = ""
+        passwordBoxChange2.text = ""
 
         passwordBox.forceActiveFocus()
-
-        // root.notificationMessage = ""
     }
 
 
@@ -624,6 +631,7 @@ SessionManagementScreen {
         backButton.visible = true
 
         userNameInput.text = temp["username"]
+        passwordBox.text = temp["password"]
 
         pinBox.forceActiveFocus()
 
@@ -648,7 +656,12 @@ SessionManagementScreen {
 
         backButton.Layout.rowSpan = 4
 
-        userNameInput.text = ""
+        userNameInput.text = temp["username"]
+        passwordBox.text = ""
+        pinBox.text = ""
+        passwordBoxRegister.text = ""
+        passwordBoxChange1.text = ""
+        passwordBoxChange2.text = ""
 
         userNameInputRegister.forceActiveFocus()
 
@@ -670,9 +683,13 @@ SessionManagementScreen {
 
         loginButton.visible = false
         registerButton.visible = false
-
-        passwordBoxChange1.text = ''
-        passwordBoxChange2.text = ''
+        
+        userNameInput.text = temp["username"]
+        passwordBox.text = ""
+        pinBox.text = ""
+        passwordBoxRegister.text = ""
+        passwordBoxChange1.text = ""
+        passwordBoxChange2.text = ""
 
         passwordBoxChange1.visible = true
         passwordBoxChange2.visible = true
