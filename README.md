@@ -47,7 +47,7 @@ cd ppnfc  # Neaizmirstam obligāti pāriet uz risinājuma mapi
 2. Manuāli izpako lejupielādēto arhīva failu
 
 ```bash
-wget https://github.com/richardevcom/PAMPy-NFC/-/archive/v1.3.6/PAMPy-NFC-v1.3.5.tar.gz
+wget https://github.com/richardevcom/PAMPy-NFC/archive/refs/tags/v1.3.6.zip
 tar -xf main.tar.gz
 cd PAMPy-NFC-main   # Neaizmirstam obligāti pāriet uz risinājuma mapi
 ```
