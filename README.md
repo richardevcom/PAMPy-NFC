@@ -1,7 +1,7 @@
 # PAMPy NFC solution
 
 <p align="center">
-  <img src="https://gitlab.bkus.lv/richard.mucelan/PAMPy-NFC/-/raw/main/hero.png?raw=true" alt="NFC"/>
+  <img src="https://github.com/richardevcom/PAMPy-NFC/raw/main/hero.png?raw=true" alt="NFC"/>
 </p>
 
 ## Instalācija
@@ -16,7 +16,7 @@
 # Lejupielādēt cURL
 sudo apt install curl
 # Lejupielādēt instalācijas failu
-sudo wget https://gitlab.bkus.lv/richardev/PAMPy-NFC/-/raw/main/setup/install.sh
+sudo wget https://github.com/richardevcom/PAMPy-NFC/blob/main/setup/install.sh
 # Palaist instalācijas failu (obligāti jānorāda API servera adrese -u argumentam)
 sudo bash install.sh -u http://server_ip/api/
 ```
@@ -40,14 +40,14 @@ apt-get -y update
 
 ```bash
 apt-get -y install git
-git clone http://gitlab.bkus.lv/richardev/PAMPy-NFC.git ppnfc
+git clone https://github.com/richardevcom/PAMPy-NFC.git ppnfc
 cd ppnfc  # Neaizmirstam obligāti pāriet uz risinājuma mapi
 ```
 
 2. Manuāli izpako lejupielādēto arhīva failu
 
 ```bash
-wget http://gitlab.bkus.lv/richardev/PAMPy-NFC/-/archive/v1.3.6/PAMPy-NFC-v1.3.5.tar.gz
+wget https://github.com/richardevcom/PAMPy-NFC/-/archive/v1.3.6/PAMPy-NFC-v1.3.5.tar.gz
 tar -xf main.tar.gz
 cd PAMPy-NFC-main   # Neaizmirstam obligāti pāriet uz risinājuma mapi
 ```
